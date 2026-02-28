@@ -1,0 +1,11 @@
+{
+	"id": "ai-translator",
+	"name": "AI Translator",
+	"version": "1.0.0",
+	"minAppVersion": "0.15.0",
+	"description": "基于大模型的 AI 翻译插件，支持右键翻译选中文本",
+	"author": "",
+	"authorUrl": "",
+	"fundingUrl": "",
+	"isDesktopOnly": false
+}

@@ -1,0 +1,12 @@
+{
+  "name": "obsidian-ai-translator",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=packages/plugin",
+    "build": "npm run build --workspace=packages/plugin"
+  }
+}

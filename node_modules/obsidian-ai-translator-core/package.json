@@ -1,0 +1,21 @@
+{
+  "name": "obsidian-ai-translator-core",
+  "version": "1.0.0",
+  "description": "AI 翻译核心库",
+  "main": "index.js",
+  "type": "module",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "keywords": [
+    "translation",
+    "ai"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "tslib": "^2.8.1"
+  }
+}
