@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, IconName, MarkdownRenderer, TextAreaComponent, ButtonComponent, DropdownComponent } from 'obsidian';
+import { ItemView, WorkspaceLeaf, IconName, MarkdownRenderer, TextAreaComponent, ButtonComponent, DropdownComponent, Menu, Notice } from 'obsidian';
 import { ProviderType, getModelsForProvider } from './model-config';
 
 export const VIEW_TYPE_TRANSLATION = 'translation-view';
@@ -86,7 +86,12 @@ export class TranslationView extends ItemView {
         this.resultContainer.style.flex = '1';
         this.resultContainer.style.overflowY = 'auto';
         this.resultContainer.style.minHeight = '0';
+        this.resultContainer.style.userSelect = 'text';
         this.contentContainer = this.resultContainer;
+
+        this.resultContainer.addEventListener('contextmenu', (evt) => {
+            this.handleContextMenu(evt);
+        });
 
         // ===== 输入区域 (底部固定) =====
         // 位置: 底部
@@ -103,7 +108,7 @@ export class TranslationView extends ItemView {
         inputWrapper.style.position = 'relative';
 
         // ===== 文本输入框 =====
-        // 高度: 80px (minHeight)
+        // 高度: 100px (minHeight)
         // 快捷键: Ctrl+Enter 触发翻译
         this.inputComponent = new TextAreaComponent(inputWrapper);
         this.inputComponent.setPlaceholder('请输入要翻译的内容...');
@@ -169,6 +174,30 @@ export class TranslationView extends ItemView {
         if (this.translateCallback) {
             await this.translateCallback(text);
         }
+    }
+
+    private handleContextMenu(event: MouseEvent): void {
+        const selection = window.getSelection();
+        const selectedText = selection?.toString().trim();
+
+        if (!selectedText) {
+            return;
+        }
+
+        event.preventDefault();
+
+        const menu = new Menu();
+        menu.addItem((item) => {
+            item
+                .setTitle('复制')
+                .setIcon('copy')
+                .onClick(async () => {
+                    await navigator.clipboard.writeText(selectedText);
+                    new Notice('已复制到剪贴板');
+                });
+        });
+
+        menu.showAtMouseEvent(event);
     }
 
     private async renderMarkdown(): Promise<void> {

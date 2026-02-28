@@ -1,3 +1,4 @@
 node_modules/
-dist/
 .obsidian/
+esbuild.config.mjs
+packege.json
