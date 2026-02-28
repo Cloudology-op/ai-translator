@@ -14,7 +14,7 @@ export class Translator {
 
     private buildPrompt(targetLanguage: string): string
     {
-        return `你是一个智能翻译机器，根据输入内容和判断规则自动判断输入类型并根据输出规则输出对应的格式。
+        return `你是一个智能翻译机器，根据输入内容和判断规则自动判断输入类型和所属语言并根据输出规则输出对应的格式。
                 
 ##判断规则和输出规则
 - 单词：单个单词，返回单词的音标、单词的各种意思和每种意思的示例用法、单词的词源学
