@@ -1,6 +1,6 @@
 import { App, PluginSettingTab, Setting, Notice, Modal } from 'obsidian'
 import { ApiProviderFactory } from '../../../core/api-provider'
-import { MODEL_CONFIG, ProviderType, getModelsForProvider, getDefaultModelForProvider, getDefaultBaseUrlForProvider, addModelForProvider } from './model-config'
+import { MODEL_CONFIG, ProviderType, getModelsForProvider, getDefaultModelForProvider, getDefaultBaseUrlForProvider, addModelForProvider, deleteModelsForProvider, loadModelConfigFromSettings } from './model-config'
 
 export class TranslatorSettingTab extends PluginSettingTab {
     private modelDropdown: any;
@@ -10,10 +10,16 @@ export class TranslatorSettingTab extends PluginSettingTab {
         super(app, plugin);
     }
 
-    private updateViewProvider() {
+    private getSelectedDefultModel():string {
+        return this.modelDropdown?.getValue() || '';
+    }
+
+    private updateViewProvider(): void {
         const view = this.plugin.getView() as any;
         if (view && view.setProvider) {
             view.setProvider(this.plugin.settings.apiConfig.provider as ProviderType);
+            const selectedDefaultModel = this.getSelectedDefultModel();
+            view.setModel(selectedDefaultModel);
         }
     }
 
@@ -25,8 +31,9 @@ export class TranslatorSettingTab extends PluginSettingTab {
         const models = getModelsForProvider(provider);
         models.forEach(m => this.modelDropdown.addOption(m.value, m.label));
 
-        this.plugin.settings.apiConfig.model = getDefaultModelForProvider(provider);
-        this.modelDropdown.setValue(this.plugin.settings.apiConfig.model);
+        const defaultModel = getDefaultModelForProvider(provider);
+        this.plugin.settings.apiConfig.model = defaultModel;
+        this.modelDropdown.setValue(defaultModel);
 
         const defaultBaseUrl = getDefaultBaseUrlForProvider(provider);
         this.plugin.settings.apiConfig.baseUrl = defaultBaseUrl;
@@ -55,10 +62,23 @@ export class TranslatorSettingTab extends PluginSettingTab {
         }
     }
 
+    private saveModelConfigToSettings(): void {
+        for (const provider of Object.keys(MODEL_CONFIG) as ProviderType[]) {
+            this.plugin.settings.modelConfigs[provider] = {
+                defaultBaseUrl: MODEL_CONFIG[provider]!.defaultBaseUrl,
+                models: MODEL_CONFIG[provider]!.models,
+                defaultModel: MODEL_CONFIG[provider]!.defaultModel
+            };
+        }
+    }
+
     display(): void
     {
         const {containerEl} = this;
         containerEl.empty();
+        
+        loadModelConfigFromSettings(this.plugin.settings.modelConfigs);
+        
         this.currentProvider = this.plugin.settings.apiConfig.provider;
 
         containerEl.createEl('h2', {text: 'AI翻译插件设置'});
@@ -90,6 +110,8 @@ export class TranslatorSettingTab extends PluginSettingTab {
                     .setValue(this.plugin.settings.apiConfig.baseUrl)
                     .onChange(async (value: string) => {
                         this.plugin.settings.apiConfig.baseUrl = value;
+                        MODEL_CONFIG[this.currentProvider]!.defaultBaseUrl = value;
+                        this.saveModelConfigToSettings();
                         await this.plugin.saveSettings();
                     });
             });
@@ -120,6 +142,8 @@ export class TranslatorSettingTab extends PluginSettingTab {
                 this.updateModelOption(this.currentProvider as ProviderType);
                 dropdown.onChange(async (value: string) => {
                     this.plugin.settings.apiConfig.model = value;
+                    MODEL_CONFIG[this.currentProvider]!.defaultModel = value;
+                    this.saveModelConfigToSettings();
                     await this.plugin.saveSettings();
                 });
             })
@@ -129,6 +153,21 @@ export class TranslatorSettingTab extends PluginSettingTab {
                     .onClick(() => {
                         new AddModelModal(this.app, this.currentProvider, () => {
                             this.updateModelOption(this.currentProvider);
+                            this.updateViewProvider();
+                            this.saveModelConfigToSettings();
+                            this.plugin.saveSettings();
+                        }).open();
+                    });
+            })
+            .addButton(button => {
+                button
+                    .setButtonText('删除模型')
+                    .onClick(() => {
+                        new DeleteModelsModal(this.app, this.currentProvider, () => {
+                            this.updateModelOption(this.currentProvider);
+                            this.updateViewProvider();
+                            this.saveModelConfigToSettings();
+                            this.plugin.saveSettings();
                         }).open();
                     });
             })        
@@ -160,7 +199,6 @@ class AddModelModal extends Modal {
 
     onOpen() {
         const { contentEl } = this;
-        contentEl.createEl('h2', { text: '添加模型' });
 
         let labelInput: any;
         let valueInput: any;
@@ -180,11 +218,9 @@ class AddModelModal extends Modal {
             });
 
         new Setting(contentEl)
-            .setName('')
             .addButton(button => {
                 button
                     .setButtonText('保存')
-                    .setCta()
                     .onClick(() => {
                         const label = labelInput.getValue().trim();
                         const value = valueInput.getValue().trim();
@@ -192,21 +228,81 @@ class AddModelModal extends Modal {
                             new Notice('请填写完整的模型信息', 2000);
                             return;
                         }
-                        addModelForProvider(this.provider, value, label);
-                        this.onSave();
+                        if (addModelForProvider(this.provider, value, label))
+                            this.onSave();
                         this.close();
                         new Notice('模型添加成功', 2000);
                     });
-            })
-            .addButton(button => {
-                button
-                    .setButtonText('取消')
-                    .onClick(() => this.close());
             });
     }
 
     onClose() {
         const { contentEl } = this;
         contentEl.empty();
+    }
+}
+
+class DeleteModelsModal extends Modal {
+    private onSave: () => void;
+    private provider: ProviderType;
+    private selectedModels: Set<string> = new Set();
+
+    constructor(app: any, provider: ProviderType, onSave: () => void) {
+        super(app);
+        this.provider = provider;
+        this.onSave = onSave;
+    }
+
+    onOpen() {
+        const { contentEl } = this;
+        const models = getModelsForProvider(this.provider);
+        
+        if (models.length === 0) {
+            contentEl.createEl('p', { text: '当前提供商没有可删除的模型' });
+        } 
+        else {
+            models.forEach(model => {
+                const setting = new Setting(contentEl)
+                    .setName(model.label)
+                    .setDesc(model.value);
+                
+                const checkbox = setting.controlEl.createEl('input', { type: 'checkbox' });
+                checkbox.style.width = '18px';
+                checkbox.style.height = '18px';
+                checkbox.style.cursor = 'pointer';
+                checkbox.addEventListener('change', () => {
+                    if (checkbox.checked) {
+                        this.selectedModels.add(model.value);
+                    } else {
+                        this.selectedModels.delete(model.value);
+                    }
+                });
+            });
+
+            new Setting(contentEl)
+                .addButton(button => {
+                    button
+                        .setButtonText('删除')
+                        .setCta()
+                        .setWarning()
+                        .onClick(() => {
+                            if (this.selectedModels.size === 0) {
+                                new Notice('请选择要删除的模型', 2000);
+                                return;
+                            }
+                            const deletedCount = this.selectedModels.size;
+                            deleteModelsForProvider(this.provider, Array.from(this.selectedModels));
+                            this.onSave();
+                            this.close();
+                            new Notice(`已删除 ${deletedCount} 个模型`, 2000);
+                        });
+                });
+        }
+    }
+
+    onClose() {
+        const { contentEl } = this;
+        contentEl.empty();
+        this.selectedModels.clear();
     }
 }

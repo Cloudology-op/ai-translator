@@ -141,7 +141,7 @@ class DeepSeekProvider implements IApiProvider {
     }
 }
 
-class OllamaProvider implements IApiProvider {
+class OpenaiFormatProvider implements IApiProvider {
     private endpoint: string;
 
     constructor(private config: ApiConfig) {
@@ -155,7 +155,7 @@ class OllamaProvider implements IApiProvider {
         const response = await fetch(this.endpoint, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${this.config.apiKey || 'ollama'}`,
+                'Authorization': `Bearer ${this.config.apiKey || 'openai-format'}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
@@ -166,7 +166,7 @@ class OllamaProvider implements IApiProvider {
         });
 
         if (!response.ok) {
-            throw new Error(`Ollama API error: ${response.status}`);
+            throw new Error(`OpenAI Format API error: ${response.status}`);
         }
 
         const reader = response.body?.getReader();
@@ -218,8 +218,8 @@ export class ApiProviderFactory {
                 return new QwenProvider(config);
             case 'deepseek':
                 return new DeepSeekProvider(config);
-            case 'ollama':
-                return new OllamaProvider(config);
+            case 'openai-format':
+                return new OpenaiFormatProvider(config);
             default:
                 throw new Error(`Unsupported provider: ${config.provider}`);
         }

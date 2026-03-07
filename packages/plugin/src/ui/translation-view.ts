@@ -113,7 +113,7 @@ export class TranslationView extends ItemView {
         this.inputComponent = new TextAreaComponent(inputWrapper);
         this.inputComponent.setPlaceholder('请输入要翻译的内容...');
         this.inputComponent.inputEl.style.width = '100%';
-        this.inputComponent.inputEl.style.minHeight = '100px';
+        this.inputComponent.inputEl.style.minHeight = '70px';
         this.inputComponent.inputEl.style.resize = 'none';
         this.inputComponent.inputEl.style.paddingRight = '8px';
         this.inputComponent.inputEl.style.paddingBottom = '32px';  // 为底部按钮留空间
@@ -140,9 +140,10 @@ export class TranslationView extends ItemView {
         // 位于翻译按钮左侧
         // 可选模型根据当前提供商动态更新
         this.modelDropdown = new DropdownComponent(controlsRow);
-        this.modelDropdown.selectEl.style.padding = '2px 6px';
+        this.modelDropdown.selectEl.style.padding = '2px 24px 2px 6px';
         this.modelDropdown.selectEl.style.height = '24px';
-        this.modelDropdown.selectEl.style.minWidth = '120px';
+        this.modelDropdown.selectEl.style.width = 'fit-content';
+        this.modelDropdown.selectEl.style.minWidth = '80px';
         this.updateModelOptions();
 
         // ===== 翻译按钮 =====

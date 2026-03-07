@@ -3,7 +3,7 @@ import { Translator } from '../../core/translator';
 import { PluginSettings, DEFAULT_SETTINGS } from './settings';
 import { TranslationView, VIEW_TYPE_TRANSLATION } from './ui/translation-view';
 import { TranslatorSettingTab } from './ui/setting-tab';
-import { ProviderType } from './ui/model-config';
+import { ProviderType, loadModelConfigFromSettings } from './ui/model-config';
 
 export default class TranslatorPlugin extends Plugin {
     private translator: Translator | null = null;
@@ -82,7 +82,7 @@ export default class TranslatorPlugin extends Plugin {
     private async handleTranslate(editor: Editor) {
         const selection = editor.getSelection();
         if (!selection || selection.trim().length === 0) {
-            new Notice('请先选中要翻译的文本');
+            new Notice('请先选中要翻译的文本', 2000);
             return;
         }
 
@@ -92,6 +92,8 @@ export default class TranslatorPlugin extends Plugin {
 
     async onload() {
         await this.loadSettings();
+
+        loadModelConfigFromSettings(this.settings.modelConfigs);
 
         this.translator = new Translator(this.settings.apiConfig);
 

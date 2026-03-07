@@ -1,5 +1,5 @@
 export type ResultType = 'word' | 'phrase' | 'sentence';
-export type ApiProviderType = 'qwen' | 'deepseek' | 'ollama';
+export type ApiProviderType = 'qwen' | 'deepseek' | 'openai-format';
 
 export interface ApiConfig {
     provider: ApiProviderType;
